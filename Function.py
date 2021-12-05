@@ -1,11 +1,14 @@
 import numpy as np
 
 class Neural_Network:
-    def __init__(self, input, hidden, output):
-        self.weights_hidden = np.random.random((input, hidden))
-        self.weights_output = np.random.random((hidden, output))
-        self.bias_hidden = np.random.rand((1))
-        self.bias_output = np.random.rand((1))
+    def __init__(self, layers:list):
+        self.n = len(layers) - 1
+        self.weights = [np.random.uniform(-1, 1,(layers[i], layers[i+1]))for i in range(self.n)]
+        self.bias = [np.random.uniform(-1, 1,(layers[i+1]))for i in range(self.n)]
+        self.va = self.n * [0]
+        self.a = self.n * [0]
+        self.accuracy_history = list()
+
 
     def sigmoid(self, x):
         return 1/(1+np.exp(-x))
@@ -13,22 +16,49 @@ class Neural_Network:
     def sigmoid_der(self, x):
         return self.sigmoid(x)*(1-self.sigmoid(x))
 
-    def predict(self, x):
-        activate_hidden_layer = self.sigmoid(np.dot(x, self.weights_hidden) + self.bias_hidden)
-        activate_output_layer = self.sigmoid(np.dot(activate_hidden_layer, self.weights_output) + self.bias_output)
-        return activate_output_layer
-
-    def error(self, error, curent_result, layer, bias):
-        der = self.sigmoid_der(np.dot(curent_result, layer + bias))
-        t_output_hidden = curent_result
-        #delta of weights between hidden layer and output
-        delta = np.dot(t_output_hidden.T, error * der)
-        return delta, der
+    def feedforward(self,x):
+        self.va[0] = np.dot(x, self.weights[0]) + self.bias[0].T
+        self.a[0] = self.sigmoid(self.va[0])
+        for i in range(self.n - 1):
+            self.va[i + 1] = np.dot(self.a[i], self.weights[i + 1]) + self.bias[i + 1].T
+            self.a[i + 1] = self.sigmoid(self.va[i + 1])
+        return self.a[self.n - 1]
     
+    def error(self, x, y):
+        a = self.feedforward(x)
+        return np.sum((y-a)**2)/x.shape[1]
+
+    def derror(self, x, y):
+        a = self.feedforward(x)
+        return (2*(a - y)/x.shape[1] * self.sigmoid_der(self.va[self.n-1])).T
+
+    def backprog(self, x, y): 
+        wd = self.n * [0]
+        bd = self.n * [0]
+        delta = self.derror(x,y) # delta_L
+        for i in range(self.n-1, 0,-1):   #starts at second last layer and counts backwards
+            wd[i] = np.dot(delta, self.a[i-1])
+            bd[i] = np.sum(delta, axis = 1)
+            delta = np.dot(self.weights[i],delta) * self.sigmoid_der(self.va[i-1]).T
+        wd[0] = np.dot(delta, x)
+        bd[0] = np.sum(delta,axis = 1) # reshape to keep dimensions and transpose
+        return wd, bd
+    
+    def training(self, x, y, lr, itermax):
+        for epoch in range(itermax):
+            a = self.feedforward(x)
+            wd, bd = self.backprog(x,y)
+            for l in range(self.n):
+                self.weights[l] -= lr * wd[l].T
+                self.bias[l] -=  lr* bd[l].T
+            err = self.error(x, y)
+            print(epoch, err)
+            self.accuracy_history.append(err)
+
     def accuracy(self, test_vector_input, test_vector_output):
         count = 0     
         for i in range(len(test_vector_input)):
-            activate_output_layer = self.predict(test_vector_input[i])
+            activate_output_layer = self.feedforward(test_vector_input[i])
             output = np.zeros(len(test_vector_output[i]))
             max_value = np.argmax(activate_output_layer)
             output[max_value] = np.max(test_vector_output[i])
@@ -36,29 +66,28 @@ class Neural_Network:
                 count += 1
         # Compute the average of correct instances
         accuracy = count/len(test_vector_input)  
-        # Add it to the history vector (for plotting purposes)
-        self.accuracy_history.append(accuracy*100)
         return accuracy*100
 
+if __name__ == "__main__":
+    # ==> https://towardsdatascience.com/backpropagation-in-neural-networks-6561e1268da8
 
-    def training(self, training_input, training_output, test_input, test_output,  lr, maxStep):
-        self.accuracy_history = list()
-        for epochs in range(maxStep):
-            # calcul the intermadiate step
-            layer1 = self.sigmoid(np.dot(training_input, self.weights_hidden) + self.bias_hidden)
-            output = self.predict(training_input)
+    NN = Neural_Network([8, 8, 8])
+    input = np.array([[1, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 1, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 1, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 1, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 1, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 1, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 1, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 1]])
 
-            # application of the chain rule to find derivative of the loss function with respect to weights2 and weights1
-            d_weights2 = np.dot(layer1.T, (2*(training_output - output) * self.sigmoid_der(output)))
-            d_weights1 = np.dot(training_input.T,  (np.dot(2*(training_output - output) * self.sigmoid_der(output), self.weights_output.T) * self.sigmoid_der(layer1)))
-           
-        
-            # update the weights with the derivative (slope) of the loss function
-            self.weights_hidden += d_weights1 * lr
-            self.weights_output += d_weights2 * lr
-            ac = self.accuracy(test_input, test_output) 
-            #print(epochs, ac)
-            if ac == 100 :break
+    output = np.array([[1, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 1, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 1, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 1, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 1, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 1, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 1, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 1]]).T
 
-
-    
+    NN.training(input, output, 0.1, 100)
