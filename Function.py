@@ -1,6 +1,7 @@
 import numpy as np
 
 class Neural_Network:
+    
     def __init__(self, layers:list):
         self.n = len(layers) - 1
         self.weights = [np.random.uniform(-1, 1,(layers[i], layers[i+1]))for i in range(self.n)]
@@ -8,7 +9,6 @@ class Neural_Network:
         self.va = self.n * [0]
         self.a = self.n * [0]
         self.accuracy_history = list()
-
 
     def sigmoid(self, x):
         return 1/(1+np.exp(-x))
@@ -23,7 +23,7 @@ class Neural_Network:
             self.va[i + 1] = np.dot(self.a[i], self.weights[i + 1]) + self.bias[i + 1].T
             self.a[i + 1] = self.sigmoid(self.va[i + 1])
         return self.a[self.n - 1]
-    
+      
     def error(self, x, y):
         a = self.feedforward(x)
         return np.sum((y-a)**2)/x.shape[1]
@@ -52,7 +52,6 @@ class Neural_Network:
                 self.weights[l] -= lr * wd[l].T
                 self.bias[l] -=  lr* bd[l].T
             err = self.error(x, y)
-            print(epoch, err)
             self.accuracy_history.append(err)
 
     def accuracy(self, test_vector_input, test_vector_output):
@@ -70,8 +69,7 @@ class Neural_Network:
 
 if __name__ == "__main__":
     # ==> https://towardsdatascience.com/backpropagation-in-neural-networks-6561e1268da8
-
-    NN = Neural_Network([8, 8, 8])
+    NN = Neural_Network([8, 3, 8])
     input = np.array([[1, 0, 0, 0, 0, 0, 0, 0],
                     [0, 1, 0, 0, 0, 0, 0, 0],
                     [0, 0, 1, 0, 0, 0, 0, 0],
@@ -89,5 +87,3 @@ if __name__ == "__main__":
                     [0, 0, 0, 0, 0, 1, 0, 0],
                     [0, 0, 0, 0, 0, 0, 1, 0],
                     [0, 0, 0, 0, 0, 0, 0, 1]]).T
-
-    NN.training(input, output, 0.1, 100)
