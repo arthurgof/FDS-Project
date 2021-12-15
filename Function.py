@@ -1,4 +1,12 @@
+from typing import List
 import numpy as np
+import matplotlib.pyplot as plt
+import os
+from PIL import Image
+import random
+from scipy.stats import norm
+
+
 
 class Neural_Network:
     
@@ -65,24 +73,63 @@ class Neural_Network:
         accuracy = count/len(test_vector_input)  
         return accuracy*100
 
-NN = Neural_Network(8, 3, 8)
-
-input = np.array([[1, 0, 0, 0, 0, 0, 0, 0],
-                [0, 1, 0, 0, 0, 0, 0, 0],
-                [0, 0, 1, 0, 0, 0, 0, 0],
-                [0, 0, 0, 1, 0, 0, 0, 0],
-                [0, 0, 0, 0, 1, 0, 0, 0],
-                [0, 0, 0, 0, 0, 1, 0, 0],
-                [0, 0, 0, 0, 0, 0, 1, 0],
-                [0, 0, 0, 0, 0, 0, 0, 1]])
-
-output = np.array([[1, 0, 0, 0, 0, 0, 0, 0],
-                [0, 1, 0, 0, 0, 0, 0, 0],
-                [0, 0, 1, 0, 0, 0, 0, 0],
-                [0, 0, 0, 1, 0, 0, 0, 0],
-                [0, 0, 0, 0, 1, 0, 0, 0],
-                [0, 0, 0, 0, 0, 1, 0, 0],
-                [0, 0, 0, 0, 0, 0, 1, 0],
-                [0, 0, 0, 0, 0, 0, 0, 1]]).T
-
-NN.training(input, output, .1, 10)
+class NaiveBayes:        
+    def __init__(self,train_INPUT, Train_output):
+        self.mean = list()
+        self.sdt = list()
+        self.prior(Train_output)
+        for i in range(10):
+            lo = np.zeros(10)
+            lo[i] = 1
+            n = int(len(train_INPUT)/10)
+            id = [i for i in range(n)]
+            li = list()
+            for y in id:
+                l = train_INPUT[y+(n*i)]
+                li.append(l)
+            li = np.vstack(li)
+            self.mean.append(np.array(li).mean(axis=0))
+            self.sdt.append(np.array(li).std(axis=0))
+            
+        #self.mean = np.vstack(self.mean)
+        #self.sdt = np.vstack(self.sdt)
+        for i in range(10):
+            #print(np.min(self.sdt[i][self.sdt[i] != 0.0]))
+            self.sdt[i][self.sdt[i] == 0] = .000000000001
+              
+    def prior(self, output):
+        #count = np.unique(output, return_counts = True)[1]
+        self.priorprob = [.1]*10
+        #print(self.prior)
+                
+    def predic(self, input):
+        re = -1
+        max = -1.22
+        for i in range(10):
+            sum = self.argmax(input,i)
+            if np.isnan(sum):
+                pass
+            elif max == -1.22:
+                re = i
+                max = sum
+            elif max < sum:
+                re = i
+                max = sum  
+        return re
+                
+    def argmax(self,sample, id):
+        #print(self.mean[id], self.sdt[id])
+        posterior = np.prod(norm.pdf(sample, loc = self.mean[id], scale = self.sdt[id])) + np.log(self.priorprob[id])
+        return (posterior)
+    
+    def accuracy(self, test_vector_input, test_vector_output):
+        count = 0     
+        for i in range(len(test_vector_input)):
+            i = self.predic(test_vector_input[i])
+            output = np.zeros(len(test_vector_output[i]))
+            output[i] = 1
+            if np.array_equal(test_vector_output[i], output):
+                count += 1
+        # Compute the average of correct instances
+        accuracy = count/len(test_vector_input)  
+        return accuracy*100
