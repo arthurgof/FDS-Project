@@ -95,7 +95,7 @@ class NaiveBayes:
         #self.sdt = np.vstack(self.sdt)
         for i in range(10):
             #print(np.min(self.sdt[i][self.sdt[i] != 0.0]))
-            self.sdt[i][self.sdt[i] == 0] = .000000000001
+            self.sdt[i][self.sdt[i] == 0] = np.min(self.sdt[i][self.sdt[i] != 0.0])
               
     def prior(self, output):
         #count = np.unique(output, return_counts = True)[1]
@@ -119,15 +119,15 @@ class NaiveBayes:
                 
     def argmax(self,sample, id):
         #print(self.mean[id], self.sdt[id])
-        posterior = np.prod(norm.pdf(sample, loc = self.mean[id], scale = self.sdt[id])) + np.log(self.priorprob[id])
+        posterior = np.sum(norm.logpdf(sample, loc = self.mean[id], scale = self.sdt[id])) + np.log(self.priorprob[id])
         return (posterior)
     
     def accuracy(self, test_vector_input, test_vector_output):
         count = 0     
         for i in range(len(test_vector_input)):
-            i = self.predic(test_vector_input[i])
+            y = self.predic(test_vector_input[i])
             output = np.zeros(len(test_vector_output[i]))
-            output[i] = 1
+            output[y] = 1
             if np.array_equal(test_vector_output[i], output):
                 count += 1
         # Compute the average of correct instances
