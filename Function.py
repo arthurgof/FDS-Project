@@ -1,9 +1,4 @@
-from typing import List
 import numpy as np
-import matplotlib.pyplot as plt
-import os
-from PIL import Image
-import random
 from scipy.stats import norm
 
 
@@ -77,7 +72,7 @@ class NaiveBayes:
     def __init__(self,train_INPUT, Train_output):
         self.mean = list()
         self.sdt = list()
-        self.prior(Train_output)
+        self.prior(np.array(Train_output))
         for i in range(10):
             lo = np.zeros(10)
             lo[i] = 1
@@ -91,16 +86,21 @@ class NaiveBayes:
             self.mean.append(np.array(li).mean(axis=0))
             self.sdt.append(np.array(li).std(axis=0))
             
-        #self.mean = np.vstack(self.mean)
-        #self.sdt = np.vstack(self.sdt)
         for i in range(10):
-            #print(np.min(self.sdt[i][self.sdt[i] != 0.0]))
             self.sdt[i][self.sdt[i] == 0] = np.min(self.sdt[i][self.sdt[i] != 0.0])
               
     def prior(self, output):
-        #count = np.unique(output, return_counts = True)[1]
-        self.priorprob = [.1]*10
-        #print(self.prior)
+        dic = {}
+        count = np.unique(output, axis=0)
+        for i in range(len(count)):
+            dic[np.array2string(count[i])] = 0
+        tot = 0
+        for v in output:
+            tot += 1
+            dic[np.array2string(v)] += 1
+        self.priorprob = np.zeros(len(count))
+        for i in range(len(count)):
+            self.priorprob[i] = dic[np.array2string(count[i])]/tot
                 
     def predic(self, input):
         re = -1
@@ -118,7 +118,6 @@ class NaiveBayes:
         return re
                 
     def argmax(self,sample, id):
-        #print(self.mean[id], self.sdt[id])
         posterior = np.sum(norm.logpdf(sample, loc = self.mean[id], scale = self.sdt[id])) + np.log(self.priorprob[id])
         return (posterior)
     
