@@ -2,7 +2,6 @@ import numpy as np
 from scipy.stats import norm
 
 
-
 class Neural_Network:
     
     def __init__(self, input , hidden, output):
@@ -68,19 +67,20 @@ class Neural_Network:
         accuracy = count/len(test_vector_input)  
         return accuracy*100
 
-class NaiveBayes:        
+class NaiveBayes:
+            
     def __init__(self,train_INPUT, Train_output):
         self.mean = list()
         self.sdt = list()
         self.prior(np.array(Train_output))
+        count = np.unique(Train_output, axis=0)
         for i in range(10):
             lo = np.zeros(10)
             lo[i] = 1
-            n = int(len(train_INPUT)/10)
-            id = [i for i in range(n)]
+            id = [y for y, x in enumerate(Train_output) if np.array_equal(x, count[9-i])]
             li = list()
             for y in id:
-                l = train_INPUT[y+(n*i)]
+                l = train_INPUT[y]
                 li.append(l)
             li = np.vstack(li)
             self.mean.append(np.array(li).mean(axis=0))
